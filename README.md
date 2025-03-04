@@ -1,6 +1,7 @@
 # NodeSeek 自动签到评论加鸡腿脚本
 
 这是一个用于 NodeSeek 论坛的自动化脚本，包含签到、评论和加鸡腿功能。使用 Selenium 和 undetected-chromedriver 实现自动化操作。
+本项目不在新增功能，提供代挂服务有兴趣的可以私聊。
 
 ## 功能特点
 
