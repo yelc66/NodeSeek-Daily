@@ -21,7 +21,14 @@ cookie = os.environ.get("NS_COOKIE") or os.environ.get("COOKIE")
 # 通过环境变量控制是否使用无头模式，默认为 True（无头模式）
 headless = os.environ.get("HEADLESS", "true").lower() == "true"
 
-randomInputStr = ["bd","绑定","帮顶"]
+# 扩展更多交易区专用的口语化评论内容
+randomComments = [
+    "顶顶来了",
+    "绑定",
+    "帮顶了",
+    "好价"
+
+]
 
 def click_sign_icon(driver):
     """
@@ -44,8 +51,6 @@ def click_sign_icon(driver):
         
         # 尝试点击
         try:
-            
-            
             sign_icon.click()
             print("签到图标点击成功")
         except Exception as click_error:
@@ -172,28 +177,24 @@ def nodeseek_comment(driver):
         
         # 过滤掉置顶帖
         valid_posts = [post for post in posts if not post.find_elements(By.CSS_SELECTOR, '.pined')]
-        selected_posts = random.sample(valid_posts, min(20, len(valid_posts)))
         
-        # 存储已选择的帖子URL
-        selected_urls = []
-        for post in selected_posts:
+        # 随机选择一个帖子（而不是多个）
+        if valid_posts:
+            selected_post = random.choice(valid_posts)
             try:
-                post_link = post.find_element(By.CSS_SELECTOR, '.post-title a')
-                selected_urls.append(post_link.get_attribute('href'))
-            except:
-                continue
-        
-        is_chicken_leg = False
-        
-        # 使用URL列表进行操作
-        for i, post_url in enumerate(selected_urls):
-            try:
-                print(f"正在处理第 {i+1} 个帖子")
-                driver.get(post_url)
+                post_link = selected_post.find_element(By.CSS_SELECTOR, '.post-title a')
+                post_url = post_link.get_attribute('href')
+                post_title = post_link.text
                 
-                # 处理加鸡腿
-                if is_chicken_leg is False:
-                    is_chicken_leg = click_chicken_leg(driver)
+                print(f"已选择帖子: {post_title}")
+                print(f"帖子URL: {post_url}")
+                
+                # 打开选定的帖子
+                driver.get(post_url)
+                time.sleep(3)  # 等待页面加载
+                
+                # 尝试加鸡腿
+                click_chicken_leg(driver)
                 
                 # 等待 CodeMirror 编辑器加载
                 editor = WebDriverWait(driver, 30).until(
@@ -203,38 +204,72 @@ def nodeseek_comment(driver):
                 # 点击编辑器区域获取焦点
                 editor.click()
                 time.sleep(0.5)
-                input_text = random.choice(randomInputStr)
-
-                # 模拟输入
-                actions = ActionChains(driver)
-                # 随机输入 randomInputStr
-                for char in input_text:
-                    actions.send_keys(char)
-                    actions.pause(random.uniform(0.1, 0.3))
-                actions.perform()
                 
-                # 等待一下确保内容已经输入
-                time.sleep(2)
+                # 随机选择一条口语化评论
+                comment_text = random.choice(randomComments)
+                print(f"将要发表的评论: {comment_text}")
+
+                # 模拟真实人类输入方式
+                actions = ActionChains(driver)
+                
+                # 有时候先停顿一下，模拟思考
+                if random.random() > 0.7:
+                    time.sleep(random.uniform(1, 3))
+                
+                # 分段输入，更像人类
+                segments = []
+                if len(comment_text) > 10 and random.random() > 0.5:
+                    # 将评论分成2-3段，模拟人类思考和打字的节奏
+                    segment_count = random.randint(2, 3)
+                    segment_length = len(comment_text) // segment_count
+                    for i in range(segment_count):
+                        start = i * segment_length
+                        end = start + segment_length if i < segment_count - 1 else len(comment_text)
+                        segments.append(comment_text[start:end])
+                else:
+                    segments = [comment_text]
+                
+                for segment in segments:
+                    # 每段文字的输入速度可能不同
+                    typing_speed = random.uniform(0.03, 0.2)
+                    for char in segment:
+                        actions.send_keys(char)
+                        # 随机停顿时间，模拟真实打字
+                        actions.pause(typing_speed)
+                        # 有些字符后可能停顿较长(如逗号、句号后)
+                        if char in ['，', '。', '？', '！', '、', ',', '.', '?', '!']:
+                            actions.pause(random.uniform(0.1, 0.5))
+                    
+                    actions.perform()
+                    actions = ActionChains(driver)
+                    
+                    # 段落之间可能有停顿，模拟思考下一句话
+                    if len(segments) > 1:
+                        time.sleep(random.uniform(0.5, 2))
+                
+                # 输入完成后，有时会停顿一下再提交
+                time.sleep(random.uniform(1, 3))
                 
                 # 使用更精确的选择器定位提交按钮
                 submit_button = WebDriverWait(driver, 30).until(
-                 EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, 'submit') and contains(@class, 'btn') and contains(text(), '发布评论')]"))
+                    EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, 'submit') and contains(@class, 'btn') and contains(text(), '发布评论')]"))
                 )
+                
                 # 确保按钮可见并可点击
                 driver.execute_script("arguments[0].scrollIntoView(true);", submit_button)
                 time.sleep(0.5)
                 submit_button.click()
                 
-                print(f"已在帖子 {post_url} 中完成评论")
+                print(f"已在帖子 {post_title} 中完成评论")
                 
-                # 返回交易区
-                # driver.get(target_url)
-                # time.sleep(2)  # 等待页面加载
-                time.sleep(random.uniform(2,5))
+                # 等待评论发布成功
+                time.sleep(5)
                 
             except Exception as e:
                 print(f"处理帖子时出错: {str(e)}")
-                continue
+                print(traceback.format_exc())
+        else:
+            print("未找到有效的帖子")
                 
         print("NodeSeek评论任务完成")
                 
@@ -292,9 +327,12 @@ if __name__ == "__main__":
     if not driver:
         print("浏览器初始化失败")
         exit(1)
+    
+    # 执行评论一个帖子
     nodeseek_comment(driver)
+    
+    # 执行签到
     click_sign_icon(driver)
+    
     print("脚本执行完成")
-    # while True:
-    #     time.sleep(1)
-
+    driver.quit()
